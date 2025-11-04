@@ -75,3 +75,11 @@ func (s *PostgresStorage) Close() error {
 	}
 	return nil
 }
+
+/*func (s *PostgresStorage) SumPrice(start, end, ServiceName string, UserId uuid.UUID) (int, error) {
+	query := `
+		SELECT COALESCE(SUM(price), 0)
+		FROM subscriptions
+		WHERE start_date >= $1 AND start_date <= $2
+	`
+}*/
