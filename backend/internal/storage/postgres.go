@@ -47,7 +47,7 @@ func (s *PostgresStorage) Create(sub *models.Subscription) error {
 		RETURNING user_id
 	`
 
-	return s.db.QueryRow(query, sub.ServiceName, sub.Price, sub.UserId, sub.StartDate).Scan(&sub.UserId)
+	return s.db.QueryRow(query, sub.ServiceName, sub.Price, sub.StartDate).Scan(&sub.UserId)
 }
 
 func (s *PostgresStorage) Delete(id uuid.UUID) error {
