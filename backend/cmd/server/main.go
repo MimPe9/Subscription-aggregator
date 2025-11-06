@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"subscription-aggregator/backend/config"
+	"subscription-aggregator/backend/internal/handlers"
 	"subscription-aggregator/backend/internal/storage"
 
 	"github.com/gin-contrib/cors"
@@ -17,7 +18,22 @@ func main() {
 	r := gin.Default()
 	r.Use(cors.Default())
 
-	//subsHandler := handlers.NewSubsHandler(s)
+	r.Static("/static", "./frontend")
+
+	r.GET("/", func(c *gin.Context) {
+		c.File("./frontend/frontend.html")
+	})
+
+	subsHandler := handlers.NewSubsHandler(s)
+
+	api := r.Group("/api")
+	{
+		api.GET("/subscriptions", subsHandler.GetAllEntries)
+		api.POST("/subscriptions", subsHandler.CreateEntry)
+		api.DELETE("/subscriptions/del/:user_id", subsHandler.DeleteEntry)
+		api.PUT("/subscriptions/:user_id", subsHandler.UpdateEntry)
+		api.GET("/subscriptions/:user_id", subsHandler.GetOneEntry)
+	}
 
 	r.Run(":8010")
 }
