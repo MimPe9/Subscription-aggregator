@@ -16,6 +16,10 @@ func main() {
 
 	r := gin.Default()
 	r.Use(cors.Default())
+
+	//subsHandler := handlers.NewSubsHandler(s)
+
+	r.Run(":8010")
 }
 
 func setupStorage() *storage.PostgresStorage {

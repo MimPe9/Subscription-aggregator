@@ -50,18 +50,83 @@ func (s *PostgresStorage) Create(sub *models.Subscription) error {
 	return s.db.QueryRow(query, sub.ServiceName, sub.Price, sub.StartDate).Scan(&sub.UserId)
 }
 
+func (s *PostgresStorage) Update(sub *models.Subscription) error {
+	query := `
+		UPDATE subscriptions
+		SET service_name = $1, price = $2, start_date = $3
+		WHERE user_id = $4
+	`
+
+	res, err := s.db.Exec(query, sub.ServiceName, sub.Price, sub.StartDate, sub.UserId)
+	if err != nil {
+		return fmt.Errorf("failed to update: %w", err)
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("failed to get rows affected: %w", err)
+	}
+	if rowsAffected == 0 {
+		return fmt.Errorf("subscription with id %s not found", sub.UserId)
+	}
+
+	return nil
+}
+
+func (s *PostgresStorage) GetAllEntries() ([]models.Subscription, error) {
+	query := `
+		SELECT service_name, price, user_id, start_date 
+		FROM subscriptions
+	`
+
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var entries []models.Subscription
+	for rows.Next() {
+		var sub models.Subscription
+		err := rows.Scan(&sub.ServiceName, &sub.Price, &sub.UserId, &sub.StartDate)
+		if err != nil {
+			return nil, err
+		}
+		entries = append(entries, sub)
+	}
+
+	return entries, nil
+}
+
+func (s *PostgresStorage) GetOneEntry(id uuid.UUID) (*models.Subscription, error) {
+	query := `
+		SELECT service_name, price, user_id, start_date
+		FROM subscriptions
+		WHERE user_id = $1
+	`
+
+	var entry models.Subscription
+	err := s.db.QueryRow(query, id).Scan(&entry.ServiceName, &entry.Price, &entry.UserId, &entry.StartDate)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("subscription with user_id %s not found", id)
+		}
+		return nil, err
+	}
+	return &entry, nil
+}
+
 func (s *PostgresStorage) Delete(id uuid.UUID) error {
 	query := `
 		DELETE FROM subscriptions WHERE user_id = $1
 	`
 	res, err := s.db.Exec(query, id)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to delete: %w", err)
 	}
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
 	if rowsAffected == 0 {
 		return fmt.Errorf("subscription with id %d not found", id)
