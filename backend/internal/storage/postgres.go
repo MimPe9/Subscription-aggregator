@@ -80,7 +80,7 @@ func (s *PostgresStorage) GetAllEntries() ([]models.Subscription, error) {
 
 	rows, err := s.db.Query(query)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("query failed: %w", err)
 	}
 	defer rows.Close()
 
@@ -89,7 +89,7 @@ func (s *PostgresStorage) GetAllEntries() ([]models.Subscription, error) {
 		var sub models.Subscription
 		err := rows.Scan(&sub.ServiceName, &sub.Price, &sub.UserId, &sub.StartDate)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to scan data: %w", err)
 		}
 		entries = append(entries, sub)
 	}
@@ -129,22 +129,52 @@ func (s *PostgresStorage) Delete(id uuid.UUID) error {
 		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
 	if rowsAffected == 0 {
-		return fmt.Errorf("subscription with id %d not found", id)
+		return fmt.Errorf("subscription with id %s not found", id)
 	}
 	return nil
 }
 
 func (s *PostgresStorage) Close() error {
 	if s.db != nil {
-		return s.Close()
+		return s.db.Close()
 	}
 	return nil
 }
 
-/*func (s *PostgresStorage) SumPrice(start, end, ServiceName string, UserId uuid.UUID) (int, error) {
+func (s *PostgresStorage) SumPrice(start, end, ServiceName string, UserId uuid.UUID) (int, error) {
 	query := `
 		SELECT COALESCE(SUM(price), 0)
 		FROM subscriptions
-		WHERE start_date >= $1 AND start_date <= $2
+		WHERE ($1::uuid IS NULL OR user_id = $1)
+          AND ($2::text IS NULL OR service_name = $2)
+          AND ($3::text IS NULL OR start_date >= $3)
+          AND ($4::text IS NULL OR start_date <= $4)
 	`
-}*/
+	var UserIdParam interface{} = nil
+	if UserId != uuid.Nil {
+		UserIdParam = UserId
+	}
+
+	var ServiceNameParam interface{} = nil
+	if ServiceName != "" {
+		ServiceNameParam = ServiceName
+	}
+
+	var startParam interface{} = nil
+	if start != "" {
+		startParam = start
+	}
+
+	var endParam interface{} = nil
+	if end != "" {
+		endParam = end
+	}
+
+	var total int
+	err := s.db.QueryRow(query, UserIdParam, ServiceNameParam, startParam, endParam).Scan(&total)
+	if err != nil {
+		return 0, fmt.Errorf("failed to calculate total price: %w", err)
+	}
+
+	return total, nil
+}

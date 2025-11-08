@@ -33,6 +33,7 @@ func main() {
 		api.DELETE("/subscriptions/del/:user_id", subsHandler.DeleteEntry)
 		api.PUT("/subscriptions/:user_id", subsHandler.UpdateEntry)
 		api.GET("/subscriptions/:user_id", subsHandler.GetOneEntry)
+		api.POST("/subscriptions/sum", subsHandler.GetSumPrice)
 	}
 
 	r.Run(":8010")
