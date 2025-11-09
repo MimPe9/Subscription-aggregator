@@ -8,10 +8,10 @@ REST-сервис для агрегации данных об онлайн-по�
 
 ## Технологии
 
-**Backend:** Go, Gin Framework
-**Frontend:** HTML, CSS, JavaScript
-**База данных:** PostgreSQL
-**Контейнеризация:** Docker, Docker Compose
+- **Backend:** Go, Gin Framework
+- **Frontend:** HTML, CSS, JavaScript
+- **База данных:** PostgreSQL
+- **Контейнеризация:** Docker, Docker Compose
 
 ## Использование 
 
