@@ -46,11 +46,13 @@ func (s *PostgresStorage) Create(sub *models.Subscription) error {
 		VALUES ($1, $2, $3)
 		RETURNING user_id
 	`
-
+	log.Printf("Successfully created subscription with ID %s", sub.UserId)
 	return s.db.QueryRow(query, sub.ServiceName, sub.Price, sub.StartDate).Scan(&sub.UserId)
 }
 
 func (s *PostgresStorage) Update(sub *models.Subscription) error {
+	log.Printf("Updating subscription with ID %s", sub.UserId)
+
 	query := `
 		UPDATE subscriptions
 		SET service_name = $1, price = $2, start_date = $3
@@ -69,10 +71,13 @@ func (s *PostgresStorage) Update(sub *models.Subscription) error {
 		return fmt.Errorf("subscription with id %s not found", sub.UserId)
 	}
 
+	log.Printf("Successfully updated subscription with ID %s", sub.UserId)
 	return nil
 }
 
 func (s *PostgresStorage) GetAllEntries() ([]models.Subscription, error) {
+	log.Printf("Fetching all subscriptions")
+
 	query := `
 		SELECT service_name, price, user_id, start_date 
 		FROM subscriptions
@@ -85,6 +90,7 @@ func (s *PostgresStorage) GetAllEntries() ([]models.Subscription, error) {
 	defer rows.Close()
 
 	var entries []models.Subscription
+	count := 0
 	for rows.Next() {
 		var sub models.Subscription
 		err := rows.Scan(&sub.ServiceName, &sub.Price, &sub.UserId, &sub.StartDate)
@@ -92,12 +98,16 @@ func (s *PostgresStorage) GetAllEntries() ([]models.Subscription, error) {
 			return nil, fmt.Errorf("failed to scan data: %w", err)
 		}
 		entries = append(entries, sub)
+		count++
 	}
 
+	log.Printf("Successfully retrieved %d entries", count)
 	return entries, nil
 }
 
 func (s *PostgresStorage) GetOneEntry(id uuid.UUID) (*models.Subscription, error) {
+	log.Printf("Fetching subscription with ID %s", id)
+
 	query := `
 		SELECT service_name, price, user_id, start_date
 		FROM subscriptions
@@ -112,10 +122,14 @@ func (s *PostgresStorage) GetOneEntry(id uuid.UUID) (*models.Subscription, error
 		}
 		return nil, err
 	}
+
+	log.Printf("Successfully retrieved subscription with ID %s", id)
 	return &entry, nil
 }
 
 func (s *PostgresStorage) Delete(id uuid.UUID) error {
+	log.Printf("Deleting subscription with ID %s", id)
+
 	query := `
 		DELETE FROM subscriptions WHERE user_id = $1
 	`
@@ -131,17 +145,25 @@ func (s *PostgresStorage) Delete(id uuid.UUID) error {
 	if rowsAffected == 0 {
 		return fmt.Errorf("subscription with id %s not found", id)
 	}
+
+	log.Printf("Successfully deleted subscription with ID %s", id)
 	return nil
 }
 
 func (s *PostgresStorage) Close() error {
+	log.Printf("Closing database connection")
+
 	if s.db != nil {
 		return s.db.Close()
 	}
+
+	log.Printf("Database connection closed successfully")
 	return nil
 }
 
 func (s *PostgresStorage) SumPrice(start, end, ServiceName string, UserId uuid.UUID) (int, error) {
+	log.Printf("Calculating total price")
+
 	query := `
 		SELECT COALESCE(SUM(price), 0)
 		FROM subscriptions
@@ -170,11 +192,15 @@ func (s *PostgresStorage) SumPrice(start, end, ServiceName string, UserId uuid.U
 		endParam = end
 	}
 
+	log.Printf("Executing query with params - user_id: %v, service: %v, start: %v, end: %v",
+		UserIdParam, ServiceNameParam, startParam, endParam)
+
 	var total int
 	err := s.db.QueryRow(query, UserIdParam, ServiceNameParam, startParam, endParam).Scan(&total)
 	if err != nil {
 		return 0, fmt.Errorf("failed to calculate total price: %w", err)
 	}
 
+	log.Printf("Calculated total price: %d", total)
 	return total, nil
 }

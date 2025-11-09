@@ -21,6 +21,8 @@ func NewSubsHandler(storage *storage.PostgresStorage) *SubsHandler {
 }
 
 func (h *SubsHandler) CreateEntry(c *gin.Context) {
+	log.Printf("Beginning of creation new subscription")
+
 	var subscribe models.Subscription
 	if err := c.BindJSON(&subscribe); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON input"})
@@ -32,15 +34,20 @@ func (h *SubsHandler) CreateEntry(c *gin.Context) {
 		return
 	}
 
+	log.Printf("Subscription created")
 	c.JSON(http.StatusOK, subscribe)
 }
 
 func (h *SubsHandler) UpdateEntry(c *gin.Context) {
+	log.Printf("Starting to update subscription")
+
 	var subscribe models.Subscription
 	if err := c.BindJSON(&subscribe); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid JSON input"})
 		return
 	}
+
+	log.Printf("Updating subscription with ID %s", subscribe.UserId)
 
 	if subscribe.UserId == uuid.Nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
@@ -52,21 +59,27 @@ func (h *SubsHandler) UpdateEntry(c *gin.Context) {
 		return
 	}
 
+	log.Printf("Successfully updated subscription with ID %s", subscribe.UserId)
 	c.JSON(http.StatusOK, subscribe)
 }
 
 func (h *SubsHandler) GetAllEntries(c *gin.Context) {
+	log.Printf("Fetching all subscriptions")
+
 	entries, err := h.storage.GetAllEntries()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Entries not found"})
 		return
 	}
 
+	log.Printf("Successfully retrieved %d entries", len(entries))
 	c.JSON(http.StatusOK, entries)
 }
 
 func (h *SubsHandler) GetOneEntry(c *gin.Context) {
 	idStr := c.Param("user_id")
+
+	log.Printf("Fetching subscription with ID %s", idStr)
 
 	id, err := uuid.Parse(idStr)
 	if err != nil {
@@ -80,6 +93,7 @@ func (h *SubsHandler) GetOneEntry(c *gin.Context) {
 		return
 	}
 
+	log.Printf("Successfully retrieved subscription with ID %s", id)
 	c.JSON(http.StatusOK, entry)
 }
 
@@ -106,6 +120,8 @@ func (h *SubsHandler) DeleteEntry(c *gin.Context) {
 }
 
 func (h *SubsHandler) GetSumPrice(c *gin.Context) {
+	log.Printf("Calculating total price with filters")
+
 	type Request struct {
 		UserID      string `json:"user_id"`
 		ServiceName string `json:"service_name"`
@@ -115,9 +131,12 @@ func (h *SubsHandler) GetSumPrice(c *gin.Context) {
 
 	var req Request
 	if err := c.BindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
 		return
 	}
+
+	log.Printf("Filters - user_id: '%s', service_name: '%s', start_date: '%s', end_date: '%s'",
+		req.UserID, req.ServiceName, req.StartDate, req.EndDate)
 
 	var id uuid.UUID
 	var err error
@@ -132,10 +151,11 @@ func (h *SubsHandler) GetSumPrice(c *gin.Context) {
 
 	sum, err := h.storage.SumPrice(req.StartDate, req.EndDate, req.ServiceName, id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to sum prices"})
 		return
 	}
 
+	log.Printf("Calculated total price: %d", sum)
 	c.JSON(http.StatusOK, gin.H{
 		"total_price": sum,
 		"filters": gin.H{
