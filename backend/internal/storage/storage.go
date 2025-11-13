@@ -8,10 +8,10 @@ import (
 
 type Storage interface {
 	Create(sub *models.Subscription) error
-	Delete(id uuid.UUID) error
+	Delete(id int) error
 	Close() error
 	Update(sub *models.Subscription) error
 	GetAllEntries() ([]models.Subscription, error)
-	GetOneEntry(id uuid.UUID) (*models.Subscription, error)
-	SumPrice(start, end, ServiceName string, UserId uuid.UUID) (int, error)
+	GetOneEntry(id int) (*models.Subscription, error)
+	SumPrice(start_date, end_date, ServiceName string, UserID uuid.UUID) (int, error)
 }

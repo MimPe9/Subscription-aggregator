@@ -22,7 +22,9 @@
     <form id="subscriptionForm">
         <input type="text" id="serviceName" required placeholder="Сервис">
         <input type="number" id="price" required placeholder="Цена">
-        <input type="text" id="startDate" required placeholder="ММ-ГГГГ">
+        <input type="text" id="userId" required placeholder="User ID (UUID)">
+        <input type="text" id="startDate" required placeholder="Начало ММ-ГГГГ">
+        <input type="text" id="endDate" placeholder="Конец ММ-ГГГГ (необязательно)">
         <button type="submit">Добавить</button>
     </form>
 
@@ -51,7 +53,9 @@
             const formData = {
                 service_name: document.getElementById('serviceName').value,
                 price: parseInt(document.getElementById('price').value),
-                start_date: document.getElementById('startDate').value
+                user_id: document.getElementById('userId').value,
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value
             };
 
             try {
@@ -62,7 +66,7 @@
                 });
                 const result = await response.json();
                 if (response.ok) {
-                    showMessage('Подписка добавлена!', 'success');
+                    showMessage('Подписка добавлена! ID: ' + result.id, 'success');
                     document.getElementById('subscriptionForm').reset();
                 } else {
                     showMessage('Ошибка: ' + (result.error || 'Ошибка сервера'), 'error');
